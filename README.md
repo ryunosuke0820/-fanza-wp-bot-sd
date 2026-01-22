@@ -1,6 +1,6 @@
 # FANZA → WordPress 自動記事投稿ボット
 
-FANZA/DMMの商品情報を取得し、Claude Opus 4.5で記事を生成、WordPressに下書き投稿する自動化ツール。
+FANZA/DMMの商品情報を取得し、OpenAI GPT-4o miniで記事を生成、WordPressに下書き投稿する自動化ツール。
 
 ## 特徴
 
@@ -36,9 +36,9 @@ WP_BASE_URL=https://your-site.com
 WP_USERNAME=your_username
 WP_APP_PASSWORD=xxxx xxxx xxxx xxxx xxxx xxxx
 
-# Anthropic Claude API
-ANTHROPIC_API_KEY=sk-ant-...
-CLAUDE_MODEL=claude-opus-4-5-20250514
+# OpenAI API
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-mini
 
 # 記事生成設定
 MIN_CHARS=800
