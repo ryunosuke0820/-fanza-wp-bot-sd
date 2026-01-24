@@ -207,10 +207,31 @@ def main():
             
             try:
                 # ────────────────────────────────────────────────────────────────
-                # STEP llm_generate
+                # まずシーン用の画像URLを決定（AI生成前に必要）
+                # ────────────────────────────────────────────────────────────────
+                sample_pool = item.get("sample_image_urls", [])
+                # 記事表示用はインデックス 2, 5, 8 あたりを優先
+                targets = [2, 5, 8]
+                scene_image_urls = []
+                for t in targets:
+                    if t < len(sample_pool):
+                        scene_image_urls.append(sample_pool[t])
+                
+                # 足りない場合は前から詰める
+                if len(scene_image_urls) < 3:
+                    for url in sample_pool:
+                        if url not in scene_image_urls:
+                            scene_image_urls.append(url)
+                        if len(scene_image_urls) >= 3:
+                            break
+                
+                logger.info(f"シーン用画像: {len(scene_image_urls)}枚を選択")
+                
+                # ────────────────────────────────────────────────────────────────
+                # STEP llm_generate（画像付きでマルチモーダル呼び出し）
                 # ────────────────────────────────────────────────────────────────
                 end = step(f"llm_generate [{idx}/{len(items)}]")
-                ai_response = llm_client.generate(item=item)
+                ai_response = llm_client.generate(item=item, sample_image_urls=scene_image_urls)
                 end()
                 
                 logger.info(f"AI応答取得完了: title={ai_response.get('title', '')[:30]}...")
@@ -239,23 +260,7 @@ def main():
                         except Exception as e:
                             logger.warning(f"パッケージ画像アップロード失敗: {e}")
                     
-                    # サンプル画像をアップロード（記事表示用は中盤、アイキャッチは最後尾の過激画像）
-                    sample_pool = item.get("sample_image_urls", [])
-                    # 記事表示用はインデックス 2, 5, 8 あたりを優先
-                    targets = [2, 5, 8]
-                    selected_urls = []
-                    for t in targets:
-                        if t < len(sample_pool):
-                            selected_urls.append(sample_pool[t])
-                    
-                    # 足りない場合は前から詰める
-                    if len(selected_urls) < 3:
-                        for url in sample_pool:
-                            if url not in selected_urls:
-                                selected_urls.append(url)
-                            if len(selected_urls) >= 3:
-                                break
-                    
+                    # シーン画像をアップロード（AI生成前に決定済みのscene_image_urlsを使用）
                     # アイキャッチ用に後半の画像を選ぶ（肌の露出が多い）
                     eyecatch_url = None
                     if sample_pool:
@@ -275,7 +280,7 @@ def main():
                         logger.info(f"アイキャッチ画像候補: インデックス {eyecatch_idx} を選択（肌露出狙い）")
                     
                     new_sample_urls = []
-                    for i, sample_url in enumerate(selected_urls[:3]):
+                    for i, sample_url in enumerate(scene_image_urls[:3]):
                         try:
                             img_bytes, filename, mime_type = image_tools.download_to_bytes(sample_url)
                             result = wp_client.upload_media(file_bytes=img_bytes, filename=filename, mime_type=mime_type)

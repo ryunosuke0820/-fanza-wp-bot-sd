@@ -59,12 +59,13 @@ class OpenAIClient:
             return self.viewpoints
         return random.sample(self.viewpoints, count)
     
-    def generate_article(self, product: dict[str, Any]) -> dict[str, str]:
+    def generate_article(self, product: dict[str, Any], sample_image_urls: list[str] | None = None) -> dict[str, str]:
         """
-        商品データから記事を生成
+        商品データから記事を生成（マルチモーダル対応）
         
         Args:
             product: Product.to_dict()の結果
+            sample_image_urls: シーンに使用するサンプル画像URL（3枚想定）
         
         Returns:
             {
@@ -98,15 +99,37 @@ class OpenAIClient:
             viewpoints=viewpoint_text,
         )
         
+        # 画像がある場合はマルチモーダル形式でリクエスト
+        sample_image_urls = sample_image_urls or []
+        if sample_image_urls and "gpt-4" in self.model:
+            # マルチモーダルメッセージを構築
+            user_content = [
+                {"type": "text", "text": user_prompt + "\n\n## シーン画像\n以下の画像を見て、それぞれの画像に対応したシーン説明を生成してください。scenes配列の順番は画像の順番と一致させてください。"}
+            ]
+            for i, img_url in enumerate(sample_image_urls[:3]):
+                user_content.append({
+                    "type": "image_url",
+                    "image_url": {"url": img_url, "detail": "low"}
+                })
+            
+            messages = [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": user_content}
+            ]
+            logger.info(f"マルチモーダル呼び出し: {len(sample_image_urls)}枚の画像を送信")
+        else:
+            # 通常のテキストのみリクエスト
+            messages = [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                max_completion_tokens=2000,  # GPT-5.x対応
-                timeout=60,  # タイムアウト60秒
+                messages=messages,
+                max_completion_tokens=2000,
+                timeout=90,  # 画像処理のためタイムアウト延長
                 response_format={ "type": "json_object" } if "gpt-4" in self.model or "gpt-3.5-turbo-0125" in self.model or "gpt-5" in self.model else None
             )
             
@@ -123,17 +146,18 @@ class OpenAIClient:
             logger.error(f"OpenAI APIエラー: {e}")
             raise
     
-    def generate(self, item: dict) -> dict:
+    def generate(self, item: dict, sample_image_urls: list[str] | None = None) -> dict:
         """
         商品データからAI応答を生成
         
         Args:
             item: 商品dict（product_id, title, actress等）
+            sample_image_urls: シーンに使用するサンプル画像URL（3枚想定）
         
         Returns:
             AI応答dict（title, short_description, scenes, ratings, summary, cta_text, excerpt等）
         """
-        return self.generate_article(item)
+        return self.generate_article(item, sample_image_urls)
     
     def _parse_response(self, response: str) -> dict:
         """OpenAIの応答をパース（新形式対応）"""
