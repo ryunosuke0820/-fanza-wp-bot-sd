@@ -4,10 +4,13 @@
 import os
 from pathlib import Path
 from dataclasses import dataclass
+from typing import Optional
 from dotenv import load_dotenv
 
 # .envファイルを読み込む
-load_dotenv()
+# 基底ディレクトリ（プロジェクトルート）にある.envを読み込めるようにする
+ROOT_DIR = Path(__file__).parent.parent.parent
+load_dotenv(ROOT_DIR / ".env")
 
 
 @dataclass
@@ -36,6 +39,7 @@ class Config:
     base_dir: Path
     data_dir: Path
     prompts_dir: Path
+    obsidian_vault_path: Optional[Path] = None
     
     @classmethod
     def from_env(cls) -> "Config":
@@ -55,7 +59,8 @@ class Config:
         if missing:
             raise ValueError(f"必須の環境変数が設定されていません: {', '.join(missing)}")
         
-        base_dir = Path(__file__).parent
+        # ROOT_DIR をベースにする
+        base_dir = ROOT_DIR
         
         return cls(
             # FANZA/DMM API
@@ -80,6 +85,7 @@ class Config:
             base_dir=base_dir,
             data_dir=base_dir / "data",
             prompts_dir=base_dir / "prompts",
+            obsidian_vault_path=Path(os.getenv("OBSIDIAN_VAULT_PATH")) if os.getenv("OBSIDIAN_VAULT_PATH") else None,
         )
     
     def validate(self) -> None:
