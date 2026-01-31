@@ -218,6 +218,11 @@ class WPClient:
             timeout=self.timeout,
             **kwargs,
         )
+
+        # エラー詳細調査用ログ
+        if response.status_code >= 400:
+            logger.error(f"API Error: {method} {url} -> {response.status_code}")
+            logger.error(f"Response Body: {response.text}")
         
         # 429エラー時はRetry-Afterを尊重
         if response.status_code == 429:
