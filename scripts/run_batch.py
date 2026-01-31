@@ -7,6 +7,7 @@ import sys
 import time
 import io
 import random
+from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 from pathlib import Path
@@ -44,6 +45,57 @@ def setup_logging(level: str) -> None:
         ],
     )
 
+def _parse_iso_dt(value: str) -> datetime | None:
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+def sync_wp_cache(
+    wp_client: WPClient,
+    dedupe_store: DedupeStore,
+    logger: logging.Logger,
+    force_full: bool = False,
+    overlap_hours: int = 6,
+    max_pages: int | None = None,
+) -> None:
+    """WP投稿をローカルDBに同期（初回フル、以後は増分）"""
+    last_sync_raw = dedupe_store.get_meta("wp_last_sync_at")
+    after = None
+
+    if force_full or not last_sync_raw:
+        logger.info("WP同期: フル同期を実行します")
+    else:
+        last_sync = _parse_iso_dt(last_sync_raw)
+        if last_sync:
+            after_dt = last_sync - timedelta(hours=overlap_hours)
+            after = after_dt.isoformat()
+            logger.info(f"WP同期: 増分同期 after={after} (last_sync={last_sync_raw})")
+        else:
+            logger.warning("WP同期: last_syncが不正なためフル同期に切り替えます")
+
+    posts_scanned = 0
+    items: list[tuple[str, int | None]] = []
+    seen_fanza: set[str] = set()
+
+    for post in wp_client.iter_posts(
+        status="any",
+        per_page=100,
+        max_pages=max_pages,
+        after=after,
+        fields="id,slug,meta,content",
+        context="edit",
+    ):
+        posts_scanned += 1
+        fanza_id = wp_client.extract_fanza_id(post)
+        if fanza_id and fanza_id not in seen_fanza:
+            items.append((fanza_id, post.get("id")))
+            seen_fanza.add(fanza_id)
+
+    inserted = dedupe_store.bulk_mark_posted(items, status="published")
+    dedupe_store.set_meta("wp_last_sync_at", datetime.now(timezone.utc).isoformat())
+    logger.info(f"WP同期完了: scanned={posts_scanned}, cached={len(items)}, inserted={inserted}")
+
 def main():
     parser = argparse.ArgumentParser(description="FANZA → WordPress 自動記事投稿")
     parser.add_argument("--limit", type=int, default=1)
@@ -52,6 +104,10 @@ def main():
     parser.add_argument("--sort", type=str, default="date")
     parser.add_argument("--since", type=str)
     parser.add_argument("--subdomain", type=str, help="対象のサブドメイン (例: sd01-chichi)")
+    parser.add_argument("--sync-full", action="store_true", help="WP投稿キャッシュを全件同期")
+    parser.add_argument("--sync-overlap-hours", type=int, default=6)
+    parser.add_argument("--sync-max-pages", type=int, default=0, help="WP同期の最大ページ(0で無制限)")
+    parser.add_argument("--fetch-max-pages", type=int, default=10, help="FANZA取得の最大ページ")
     args = parser.parse_args()
     
     setup_logging(args.log_level)
@@ -77,7 +133,13 @@ def main():
             logger.error(f"サブドメイン {resolved_subdomain} の設定が見つかりません。")
             sys.exit(1)
     
-    fanza_client = FanzaClient(config.fanza_api_key, config.fanza_affiliate_id)
+    # アフィリエイトIDの決定
+    affiliate_id = config.fanza_affiliate_id
+    if site_info and site_info.affiliate_id:
+        affiliate_id = site_info.affiliate_id
+        logger.info(f"サイト固有のアフィリエイトIDを使用: {affiliate_id}")
+
+    fanza_client = FanzaClient(config.fanza_api_key, affiliate_id)
     llm_client = OpenAIClient(config.openai_api_key, config.openai_model, config.prompts_dir, config.base_dir / "viewpoints.json")
     wp_client = WPClient(config.wp_base_url, config.wp_username, config.wp_app_password)
     renderer = Renderer(config.base_dir / "templates")
@@ -90,30 +152,47 @@ def main():
     logger.info("=" * 60)
     logger.info(f"開始: limit={args.limit}, dry_run={args.dry_run}, site={dedupe_key}")
     
+    sync_max_pages = None if args.sync_max_pages <= 0 else args.sync_max_pages
+    sync_wp_cache(
+        wp_client,
+        dedupe_store,
+        logger,
+        force_full=args.sync_full,
+        overlap_hours=args.sync_overlap_hours,
+        max_pages=sync_max_pages,
+    )
+
     # 候補取得
-    posted_ids = {pid.lower() for pid in wp_client.get_posted_fanza_ids()}
     target_count = args.limit
-    candidate_pool_size = max(target_count * 2, 40)
+    candidate_pool_size = max(target_count * 5, 80)
     all_items = []
     
-    seen_pids = set(posted_ids)
+    seen_pids: set[str] = set()
     
-    for page in range(2):
-        # 修正: 取得件数を減らして高速化
-        batch = fanza_client.fetch(limit=100, since=args.since, sort=args.sort, keyword=site_keywords, offset=page * 100)
-        if not batch: break
+    page = 0
+    max_fetch_pages = max(args.fetch_max_pages, 1)
+    while len(all_items) < candidate_pool_size and page < max_fetch_pages:
+        batch = fanza_client.fetch(
+            limit=100,
+            since=args.since,
+            sort=args.sort,
+            keyword=site_keywords,
+            offset=page * 100,
+        )
+        if not batch:
+            break
         for item in batch:
             pid = item['product_id']
             pid_norm = str(pid).lower()
             if pid_norm in seen_pids:
                 continue
+            seen_pids.add(pid_norm)
             
             if not dedupe_store.is_posted(pid_norm):
                 all_items.append(item)
-                seen_pids.add(pid_norm)
             
             if len(all_items) >= candidate_pool_size: break
-        if len(all_items) >= candidate_pool_size: break
+        page += 1
     
     random.shuffle(all_items)
     items = all_items[:target_count]

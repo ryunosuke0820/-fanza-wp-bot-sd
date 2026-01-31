@@ -16,19 +16,21 @@ class SiteConfig:
     tagline: str
     color: str
     keywords: list[str] # FANZA検索用キーワード
+    affiliate_id: str = None # サイト固有のアフィリエイトID (Noneの場合はデフォルトを使用)
 
 # サイトのリスト定義
+# サイトのリスト定義
 SITES = [
-    SiteConfig("sd01-chichi", "乳ラブ", "おっぱい鑑定所", "#FF69B4", ["巨乳", "爆乳", "着衣巨乳"]),
-    SiteConfig("sd02-shirouto", "素人専門屋", "リアルAV鑑定", "#87CEEB", ["素人", "ナンパ", "投稿"]),
-    SiteConfig("sd03-gyaru", "ギャルしか！", "ギャル特化鑑定", "#FFFF00", ["ギャル", "黒ギャル"]),
-    SiteConfig("sd04-chijo", "痴女プリーズ", "攻めAV鑑定", "#FF0000", ["痴女", "誘惑", "露出"]),
-    SiteConfig("sd05-seiso", "清楚特集", "ギャップ鑑定所", "#FFFFFF", ["清楚", "お嬢様", "美少女"]),
-    SiteConfig("sd06-hitozuma", "人妻・愛", "至福のひとときを…", "#722F37", ["人妻", "不倫"]),
-    SiteConfig("sd07-oneesan", "お姉さん集め", "綺麗なお姉さんは好きですか？", "#000080", ["お姉さん", "綺麗なお姉さん"]),
-    SiteConfig("sd08-jukujo", "熟女の家", "大人の色気たっぷり", "#5C4033", ["熟女", "美魔女"]),
-    SiteConfig("sd09-iyashi", "夜の癒し♡", "今夜はあなたを包みたい", "#E6E6FA", ["癒やし", "マッサージ", "エステ"]),
-    SiteConfig("sd10-otona", "大人な時間", "究極の大人向けAV鑑定", "#40E0D0", ["コスプレ", "制服", "イベント"]),
+    SiteConfig(subdomain="sd01-chichi", title="乳ラブ", tagline="", color="ピンク", keywords=["巨乳", "爆乳", "着衣巨乳"], affiliate_id=None),
+    SiteConfig(subdomain="sd02-shirouto", title="素人専門屋", tagline="", color="水色", keywords=["素人", "ナンパ", "投稿"], affiliate_id=None),
+    SiteConfig(subdomain="sd03-gyaru", title="ギャルしか！", tagline="", color="黄色", keywords=["ギャル", "黒ギャル"], affiliate_id=None),
+    SiteConfig(subdomain="sd04-chijo", title="痴女プリーズ", tagline="", color="赤", keywords=["痴女", "誘惑", "露出"], affiliate_id=None),
+    SiteConfig(subdomain="sd05-seiso", title="清楚特集", tagline="", color="白", keywords=["清楚", "お嬢様", "美少女"], affiliate_id=None),
+    SiteConfig(subdomain="sd06-hitozuma", title="人妻・愛", tagline="", color="ワインレッド", keywords=["人妻", "不倫"], affiliate_id=None),
+    SiteConfig(subdomain="sd07-oneesan", title="お姉さん集め", tagline="", color="紺", keywords=["お姉さん", "綺麗なお姉さん"], affiliate_id=None),
+    SiteConfig(subdomain="sd08-jukujo", title="熟女の家", tagline="", color="茶色", keywords=["熟女", "美魔女"], affiliate_id=None),
+    SiteConfig(subdomain="sd09-iyashi", title="夜の癒し♡", tagline="", color="ラベンダー", keywords=["癒やし", "マッサージ", "エステ"], affiliate_id=None),
+    SiteConfig(subdomain="sd10-otona", title="大人な時間", tagline="", color="ターコイズ", keywords=["コスプレ", "制服", "イベント"], affiliate_id=None),
 ]
 
 # 共通ログイン情報（マスターと同じと想定）

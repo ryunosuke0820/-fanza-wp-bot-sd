@@ -4,7 +4,7 @@ WordPress REST APIクライアント
 import base64
 import logging
 import time
-from typing import Any
+from typing import Any, Iterator
 from pathlib import Path
 import re
 import html as _html
@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 class WPClient:
     """WordPress REST APIクライアント"""
 
-    _FANZA_ID_RE = re.compile(r"(?i)([0-9a-z_]+(?:-[0-9a-z_]+)*-\d{2,10})$")
+    # Require at least one letter + one digit; must end with a digit (avoid dates like 2026-01-30)
+    _FANZA_ID_RE = re.compile(r"(?i)(?=[0-9a-z_-]*[a-z])(?=[0-9a-z_-]*\d)[0-9a-z_]+(?:-[0-9a-z_]+)*\d$")
+    _FANZA_ID_TEXT_RE = re.compile(r"(?i)\b(?=[0-9a-z_-]*[a-z])(?=[0-9a-z_-]*\d)[0-9a-z_]+(?:-[0-9a-z_]+)*\d\b")
     _CID_RE_LIST = (
         re.compile(r"(?i)cid=([A-Za-z0-9_\\-]+)"),
         re.compile(r"(?i)cid%3d([A-Za-z0-9_\\-]+)"),
@@ -63,8 +65,25 @@ class WPClient:
         """投稿slug末尾からFANZA product_idを推定（例: actress-ipx-123 -> ipx-123）"""
         if not slug:
             return None
-        m = cls._FANZA_ID_RE.search(slug)
-        return m.group(1).lower() if m else None
+        slug = slug.lower()
+        parts = [p for p in slug.split("-") if p]
+        # Try suffix candidates first: last 1 -> last 2 -> last 3
+        for n in (1, 2, 3):
+            if len(parts) >= n:
+                candidate = "-".join(parts[-n:])
+                if cls._FANZA_ID_RE.fullmatch(candidate):
+                    return candidate
+        return None
+
+    @classmethod
+    def _extract_fanza_id_from_text(cls, text: str) -> str | None:
+        if not text:
+            return None
+        matches = cls._FANZA_ID_TEXT_RE.findall(text)
+        if not matches:
+            return None
+        # Prefer the last match (often product code appears near the end)
+        return matches[-1].lower()
 
     @classmethod
     def _extract_fanza_id_from_content(cls, rendered_html: str) -> str | None:
@@ -81,7 +100,97 @@ class WPClient:
             m = cre.search(s)
             if m:
                 return m.group(1).lower()
+        # ??URL??????: .../vrkm01763pl.jpg?
+        url_patterns = [
+            r"pics\.dmm\.co\.jp/(?:digital|mono)/[^/]+/([A-Za-z0-9_\-]+)/",
+            r"pics\.dmm\.co\.jp/[^\"'\s]+/([A-Za-z0-9_\-]+)(?:pl|jp)(?:-\d+)?\.(?:jpg|jpeg|png)",
+            r"/wp-content/uploads/[^\"'\s]+/([A-Za-z0-9_\-]+)(?:pl|jp)(?:-\d+)?\.(?:jpg|jpeg|png)",
+        ]
+        for pat in url_patterns:
+            m = re.search(pat, s, flags=re.IGNORECASE)
+            if m:
+                candidate = m.group(1).lower()
+                if cls._FANZA_ID_TEXT_RE.fullmatch(candidate):
+                    return candidate
         return None
+
+    def extract_fanza_id(self, post: dict[str, Any]) -> str | None:
+        """投稿データからFANZA IDを抽出"""
+        meta = post.get("meta", {})
+        fanza_id: str | None = None
+        if isinstance(meta, dict):
+            fanza_id = meta.get("fanza_product_id")
+        if not fanza_id:
+            slug = post.get("slug", "") or ""
+            fanza_id = self._extract_fanza_id_from_slug(slug)
+        if not fanza_id:
+            content = post.get("content", {})
+            rendered = content.get("rendered", "") if isinstance(content, dict) else str(content or "")
+            fanza_id = self._extract_fanza_id_from_content(rendered)
+        if not fanza_id:
+            title = post.get("title", {})
+            rendered_title = title.get("rendered", "") if isinstance(title, dict) else str(title or "")
+            fanza_id = self._extract_fanza_id_from_text(rendered_title)
+        if not fanza_id:
+            excerpt = post.get("excerpt", {})
+            rendered_excerpt = excerpt.get("rendered", "") if isinstance(excerpt, dict) else str(excerpt or "")
+            fanza_id = self._extract_fanza_id_from_text(rendered_excerpt)
+        return str(fanza_id).lower() if fanza_id else None
+
+    def iter_posts(
+        self,
+        status: str = "any",
+        per_page: int = 100,
+        max_pages: int | None = 5,
+        after: str | None = None,
+        fields: str | None = None,
+        context: str | None = "edit",
+    ) -> Iterator[dict[str, Any]]:
+        """投稿一覧をページング取得（ジェネレータ）"""
+        page = 1
+        total_pages = None
+        while True:
+            if max_pages is not None and page > max_pages:
+                break
+
+            params: dict[str, Any] = {
+                "per_page": per_page,
+                "page": page,
+                "status": status,
+            }
+            if fields:
+                params["_fields"] = fields
+            if after:
+                params["after"] = after
+
+            if context:
+                response = self._request("GET", "posts", params={**params, "context": context})
+                if response.status_code in (401, 403, 404):
+                    response = self._request("GET", "posts", params=params)
+            else:
+                response = self._request("GET", "posts", params=params)
+
+            if response.status_code == 400:
+                break
+            response.raise_for_status()
+            posts = response.json()
+            if not posts or not isinstance(posts, list):
+                break
+
+            for post in posts:
+                yield post
+
+            if total_pages is None:
+                try:
+                    total_pages = int(response.headers.get("X-WP-TotalPages", "0") or 0)
+                except Exception:
+                    total_pages = 0
+
+            if total_pages and page >= total_pages:
+                break
+            if len(posts) < per_page:
+                break
+            page += 1
     
     def _request(
         self,
@@ -159,59 +268,36 @@ class WPClient:
     def get_posted_fanza_ids(
         self,
         per_page: int = 100,
-        max_pages: int = 5,
+        max_pages: int | None = 5,
         use_cache: bool = True,
         cache_ttl_seconds: int = 600,
+        after: str | None = None,
     ) -> set[str]:
         """既存投稿からFANZA商品IDを取得"""
-        if use_cache and self._posted_fanza_ids_cache is not None:
+        if use_cache and after is None and self._posted_fanza_ids_cache is not None:
             if (time.time() - self._posted_fanza_ids_cache_at) < cache_ttl_seconds:
                 return set(self._posted_fanza_ids_cache)
 
         posted_ids: set[str] = set()
-        for page in range(1, max_pages + 1):
-            try:
-                params = {
-                    "per_page": per_page,
-                    "page": page,
-                    "status": "any",
-                    "_fields": "id,slug,meta,content",
-                }
-                response = self._request("GET", "posts", params={**params, "context": "edit"})
-                if response.status_code in (403, 404, 401):
-                    response = self._request("GET", "posts", params=params)
-                if response.status_code == 400:
-                    break
-                response.raise_for_status()
-                posts = response.json()
-                if not posts:
-                    break
-                for post in posts:
-                    meta = post.get("meta", {})
-                    fanza_id: str | None = None
-                    if isinstance(meta, dict):
-                        fanza_id = meta.get("fanza_product_id")
-                    if not fanza_id:
-                        slug = post.get("slug", "") or ""
-                        fanza_id = self._extract_fanza_id_from_slug(slug)
-                    if not fanza_id:
-                        content = post.get("content", {})
-                        rendered = ""
-                        if isinstance(content, dict):
-                            rendered = content.get("rendered", "") or ""
-                        else:
-                            rendered = str(content or "")
-                        fanza_id = self._extract_fanza_id_from_content(rendered)
-                    if fanza_id:
-                        posted_ids.add(str(fanza_id).lower())
-                if len(posts) < per_page:
-                    break
-            except Exception as e:
-                logger.warning(f"WP投稿取得エラー page={page}: {e}")
-                break
+        try:
+            for post in self.iter_posts(
+                status="any",
+                per_page=per_page,
+                max_pages=max_pages,
+                after=after,
+                fields="id,slug,meta,content",
+                context="edit",
+            ):
+                fanza_id = self.extract_fanza_id(post)
+                if fanza_id:
+                    posted_ids.add(fanza_id)
+        except Exception as e:
+            logger.warning(f"WP投稿取得エラー: {e}")
+
         logger.info(f"WordPress投稿済みID抽出結果: {len(posted_ids)}件")
-        self._posted_fanza_ids_cache = set(posted_ids)
-        self._posted_fanza_ids_cache_at = time.time()
+        if after is None:
+            self._posted_fanza_ids_cache = set(posted_ids)
+            self._posted_fanza_ids_cache_at = time.time()
         return posted_ids
 
     def check_post_exists_by_slug(self, product_id: str) -> bool:
@@ -306,6 +392,108 @@ class WPClient:
         response.raise_for_status()
         return response.json()
     
+    def get_tag_id(self, name: str) -> int | None:
+        # Get tag id by name (no create).
+        if not name:
+            return None
+        if name in self._tag_cache:
+            return self._tag_cache[name]
+        try:
+            response = self._request("GET", "tags", params={"search": name})
+            response.raise_for_status()
+            tags = response.json()
+            for tag in tags:
+                if tag.get("name", "").lower() == name.lower():
+                    self._tag_cache[name] = tag.get("id")
+                    return tag.get("id")
+        except Exception as exc:
+            logger.warning(f"tag search failed: {name} - {exc}")
+        return None
+
+    def _fetch_posts(self, params: dict) -> list[dict]:
+        response = self._request("GET", "posts", params=params)
+        response.raise_for_status()
+        return response.json()
+
+    def _strip_html(self, value: str) -> str:
+        return re.sub(r"<[^>]+>", "", value or "").strip()
+
+    def get_posts_by_tags(self, tag_ids: list[int], limit: int = 20) -> list[dict]:
+        if not tag_ids:
+            return []
+        return self._fetch_posts({
+            "per_page": limit,
+            "tags": ",".join(str(t) for t in tag_ids),
+            "status": "publish",
+            "orderby": "date",
+            "order": "desc",
+            "context": "view",
+        })
+
+    def get_posts_by_categories(self, category_ids: list[int], limit: int = 20) -> list[dict]:
+        if not category_ids:
+            return []
+        return self._fetch_posts({
+            "per_page": limit,
+            "categories": ",".join(str(c) for c in category_ids),
+            "status": "publish",
+            "orderby": "date",
+            "order": "desc",
+            "context": "view",
+        })
+
+    def find_related_posts(
+        self,
+        priority: list[str] | None,
+        tag_ids: list[int] | None,
+        category_ids: list[int] | None,
+        limit: int = 6,
+        exclude_fanza_id: str | None = None,
+    ) -> list[dict]:
+        # Score related posts by priority order.
+        tag_ids = tag_ids or []
+        category_ids = category_ids or []
+        order = priority or ["same_actress", "tags", "same_category"]
+        weight_base = len(order) + 1
+        scored: dict[int, dict] = {}
+
+        def add_posts(posts: list[dict], weight: int) -> None:
+            for post in posts:
+                post_id = post.get("id")
+                if not post_id:
+                    continue
+                if exclude_fanza_id:
+                    fanza_id = self.extract_fanza_id(post)
+                    if fanza_id and fanza_id == exclude_fanza_id:
+                        continue
+                entry = scored.get(post_id)
+                if not entry:
+                    scored[post_id] = {"post": post, "score": weight}
+                else:
+                    entry["score"] += weight
+
+        for idx, key in enumerate(order):
+            weight = weight_base - idx
+            if "actress" in key or "tag" in key or "tags" in key:
+                add_posts(self.get_posts_by_tags(tag_ids, limit=20), weight)
+            elif "category" in key:
+                add_posts(self.get_posts_by_categories(category_ids, limit=20), weight)
+
+        items = list(scored.values())
+        items.sort(key=lambda x: (x["score"], x["post"].get("date", "")), reverse=True)
+        results: list[dict] = []
+        for item in items:
+            post = item["post"]
+            title = post.get("title", {}).get("rendered", "")
+            title = self._strip_html(_html.unescape(title)) if isinstance(title, str) else ""
+            link = post.get("link", "")
+            if not title or not link:
+                continue
+            results.append({"title": title, "link": link})
+            if len(results) >= limit:
+                break
+        return results
+
     def update_post(self, post_id: int, data: dict) -> dict:
         """投稿を更新"""
         response = self._request("POST", f"posts/{post_id}", json=data)
@@ -319,7 +507,7 @@ class WPClient:
         response.raise_for_status()
         return response.json()
     
-    def post_draft(self, title: str, content: str, excerpt: str = "", slug: str = "", featured_media: int | None = None, categories: list[int] | None = None, fanza_product_id: str | None = None) -> int:
+    def post_draft(self, title: str, content: str, excerpt: str = "", slug: str = "", featured_media: int | None = None, categories: list[int] | None = None, tags: list[int] | None = None, fanza_product_id: str | None = None) -> int:
         """投稿を作成（本番公開）"""
         result = self.create_post(
             title=title, 
@@ -329,6 +517,7 @@ class WPClient:
             status="publish",
             featured_media=featured_media,
             categories=categories,
+            tags=tags,
             fanza_product_id=fanza_product_id
         )
         return result["id"]

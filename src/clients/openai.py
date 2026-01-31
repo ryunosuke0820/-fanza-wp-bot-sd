@@ -14,6 +14,17 @@ logger = logging.getLogger(__name__)
 
 class OpenAIClient:
     """OpenAI GPTによる記事生成"""
+    _SITE_SECTION_TITLES = {
+        "sd02-shirouto": ["リアル度チェック", "距離感メーター", "日常感ポイント"],
+        "sd03-gyaru": ["ギャル度指数", "テンション感", "派手さスパーク"],
+        "sd04-chijo": ["主導権メーター", "攻めの濃度", "支配感チェック"],
+        "sd05-seiso": ["清楚度スコア", "ギャップの破壊力", "品の余韻"],
+        "sd06-hitozuma": ["背徳レベル", "生活感のリアル", "情緒の深さ"],
+        "sd07-oneesan": ["包容力メーター", "上品さ指数", "安心感ボーナス"],
+        "sd08-jukujo": ["色気の深み", "落ち着き指数", "包み込み感"],
+        "sd09-iyashi": ["癒し度チェック", "リラックス温度", "優しさの波"],
+        "sd10-otona": ["洗練度スコア", "大人の余裕", "高級感の余韻"],
+    }
     
     def __init__(
         self,
@@ -45,6 +56,24 @@ class OpenAIClient:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return data.get("viewpoints", [])
+
+    def _build_site_sections_prompt(self, site_info: Any) -> str:
+        """サイト別の専用パート指示文を組み立てる"""
+        if not site_info or not hasattr(site_info, "subdomain"):
+            return ""
+        titles = self._SITE_SECTION_TITLES.get(site_info.subdomain)
+        if not titles:
+            return ""
+        lines = "\n".join([f"- {title}" for title in titles])
+        return (
+            "### サイト専用パート\n"
+            "以下の3見出しで短文レビューを作成する。\n"
+            "各項目は「結論→根拠→この人向け」の3文構成。\n"
+            "注意/デメリットは書かない。\n"
+            "見出し:\n"
+            f"{lines}\n"
+            "出力はJSONの site_sections 配列（title, body）に入れる。\n"
+        )
     
     def _select_viewpoints(self, count: int = 2) -> list[dict[str, str]]:
         """ランダムに観点を選択"""
@@ -59,7 +88,12 @@ class OpenAIClient:
         
         site_context = ""
         if site_info:
-            site_context = f"## サイトコンセプト\nサイト名: {site_info.title}\n説明: {site_info.tagline}\nこのサイトのテーマに合わせたトーンで執筆してください。\n\n"
+            site_context = (
+                f"## サイトコンセプト\nサイト名: {site_info.title}\n"
+                f"説明: {site_info.tagline}\n"
+                "このサイトのテーマに合わせたトーンで執筆してください。\n\n"
+            )
+            site_context += self._build_site_sections_prompt(site_info) + "\n"
 
         logger.info(f"記事生成開始: {product['product_id']}")
         user_prompt = f"{site_context}" + self.user_template.format(
@@ -116,10 +150,11 @@ class OpenAIClient:
                 "scenes": data.get("scenes", []),
                 "checklist": data.get("checklist", {}),
                 "ratings": data.get("ratings", {}),
+                "site_sections": data.get("site_sections", []),
                 "summary": data.get("summary", ""),
                 "faq": data.get("faq", []),
                 "cta_text": data.get("cta_text", "今すぐ堪能する"),
                 "excerpt": data.get("excerpt", ""),
             }
         except json.JSONDecodeError:
-            return {"title": "レビュー", "summary": response[:200], "scenes": [], "ratings": {}, "short_description": "", "cta_text": "今すぐ堪能する", "excerpt": ""}
+            return {"title": "レビュー", "summary": response[:200], "scenes": [], "ratings": {}, "short_description": "", "cta_text": "今すぐ堪能する", "excerpt": "", "site_sections": []}

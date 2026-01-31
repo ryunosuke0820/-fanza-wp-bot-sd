@@ -10,7 +10,7 @@ from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
-Status = Literal["drafted", "failed", "dry_run", "processing"]
+Status = Literal["drafted", "failed", "dry_run", "processing", "published"]
 
 class DedupeStore:
     """投稿済み商品の管理"""
@@ -32,6 +32,12 @@ class DedupeStore:
                     error_message TEXT
                 )
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                )
+            """)
             conn.commit()
             logger.debug(f"データベース初期化完了: {self.db_path}")
     
@@ -45,7 +51,7 @@ class DedupeStore:
         finally:
             conn.close()
     
-    def is_posted(self, product_id: str, processing_ttl_hours: int = 6) -> bool:
+    def is_posted(self, product_id: str, processing_ttl_hours: int = 6, failed_retry_hours: int = 24) -> bool:
         """既に投稿済みかどうかを確認（処理中は一定時間だけ重複扱い）"""
         with self._connect() as conn:
             row = conn.execute(
@@ -67,6 +73,15 @@ class DedupeStore:
                     # created_at が壊れている場合は保守的に「処理中」とみなす
                     return True
                 if datetime.now() - started_at < timedelta(hours=processing_ttl_hours):
+                    return True
+
+
+            if status == "failed":
+                try:
+                    failed_at = datetime.fromisoformat(str(row["created_at"]))
+                except Exception:
+                    return True
+                if datetime.now() - failed_at < timedelta(hours=failed_retry_hours):
                     return True
 
             return False
@@ -139,6 +154,38 @@ class DedupeStore:
             )
             conn.commit()
             logger.info(f"成功記録: {product_id}, status={status}, wp_post_id={wp_post_id}")
+
+    def bulk_mark_posted(self, items: list[tuple[str, int | None]], status: Status = "published") -> int:
+        """WP既存投稿を一括で記録（重複は上書きしない）"""
+        if not items:
+            return 0
+        now = datetime.now().isoformat()
+        rows = [(pid, status, wp_id, now) for pid, wp_id in items]
+        with self._connect() as conn:
+            conn.executemany(
+                """
+                INSERT INTO posted_items
+                (product_id, status, wp_post_id, created_at, error_message)
+                VALUES (?, ?, ?, ?, NULL)
+                ON CONFLICT(product_id) DO UPDATE SET
+                    status = CASE
+                        WHEN posted_items.status IN ('drafted', 'published') THEN posted_items.status
+                        ELSE excluded.status
+                    END,
+                    wp_post_id = CASE
+                        WHEN posted_items.wp_post_id IS NOT NULL THEN posted_items.wp_post_id
+                        ELSE excluded.wp_post_id
+                    END,
+                    created_at = CASE
+                        WHEN posted_items.status IN ('drafted', 'published') THEN posted_items.created_at
+                        ELSE excluded.created_at
+                    END,
+                    error_message = NULL
+                """,
+                rows,
+            )
+            conn.commit()
+        return len(rows)
     
     def record_failure(self, product_id: str, error_message: str) -> None:
         """投稿失敗を記録"""
@@ -172,6 +219,24 @@ class DedupeStore:
                 "failed": row["failed"] or 0,
                 "dry_run": row["dry_run"] or 0,
             }
+
+    def get_meta(self, key: str) -> str | None:
+        """メタ情報の取得"""
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT value FROM metadata WHERE key = ?",
+                (key,),
+            ).fetchone()
+            return str(row["value"]) if row else None
+
+    def set_meta(self, key: str, value: str) -> None:
+        """メタ情報の保存"""
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
+                (key, value),
+            )
+            conn.commit()
     
     def clear_failed(self) -> int:
         """失敗した項目をクリア"""

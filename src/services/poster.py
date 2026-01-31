@@ -1,4 +1,4 @@
-"""
+﻿"""
 投稿統合サービス
 """
 import logging
@@ -156,24 +156,12 @@ class PosterService:
             site_id = "default"
             if site_info and hasattr(site_info, "subdomain"):
                 site_id = site_info.subdomain
-            
-            content_html = self.renderer.render_post_content(item, ai_response, site_id=site_id)
 
-            if dry_run:
-                logger.info("【ドライラン】WP投稿をスキップ")
-                
-                # プレビュー保存
-                try:
-                    preview_path = self.config.base_dir / f"preview_{site_id}.html"
-                    preview_path.write_text(content_html, encoding="utf-8")
-                    logger.info(f"【ドライラン】プレビューHTMLを保存しました: {preview_path}")
-                except Exception as e:
-                    logger.warning(f"プレビュー保存失敗: {e}")
+            category_ids: list[int] = []
+            tag_ids: list[int] = []
+            related_posts: list[dict] = []
 
-                self.dedupe_store.record_success(product_id, wp_post_id=None, status="dry_run")
-                return "success"
-            
-            # タクソノミー準備
+            # タクソノミー準備 (dry_run時は作成しない)
             genres_raw = item.get("genre", [])
             genres_str = "".join(genres_raw)
             title_str = item.get("title", "")
@@ -196,11 +184,53 @@ class PosterService:
                     if any(kw in genres_str for kw in keywords):
                         selected_big_cat = big_cat
                         break
+
+            if not dry_run:
+                category_ids, tag_ids = self.wp_client.prepare_taxonomies(
+                    genres=[selected_big_cat],
+                    actresses=item.get("actress", [])
+                )
+            else:
+                # dry_runでは作成せず既存タグのみ参照
+                for actress in item.get("actress", []) or []:
+                    tag_id = self.wp_client.get_tag_id(actress)
+                    if tag_id:
+                        tag_ids.append(tag_id)
+
+            # related posts scoring
+            try:
+                site_decor = self.renderer._get_site_decor(site_id)
+                priority = site_decor.get("related", {}).get("priority")
+                related_posts = self.wp_client.find_related_posts(
+                    priority=priority,
+                    tag_ids=tag_ids,
+                    category_ids=category_ids,
+                    limit=6,
+                    exclude_fanza_id=product_id,
+                )
+            except Exception as e:
+                logger.warning(f"related posts fetch failed: {e}")
             
-            category_ids, tag_ids = self.wp_client.prepare_taxonomies(
-                genres=[selected_big_cat],
-                actresses=item.get("actress", [])
+            content_html = self.renderer.render_post_content(
+                item,
+                ai_response,
+                site_id=site_id,
+                related_posts=related_posts,
             )
+
+            if dry_run:
+                logger.info("【ドライラン】WP投稿をスキップ")
+                
+                # プレビュー保存
+                try:
+                    preview_path = self.config.base_dir / f"preview_{site_id}.html"
+                    preview_path.write_text(content_html, encoding="utf-8")
+                    logger.info(f"【ドライラン】プレビューHTMLを保存しました: {preview_path}")
+                except Exception as e:
+                    logger.warning(f"プレビュー保存失敗: {e}")
+
+                self.dedupe_store.record_success(product_id, wp_post_id=None, status="dry_run")
+                return "success"
             
             # WordPress投稿
             actresses = item.get("actress", [])
@@ -216,6 +246,7 @@ class PosterService:
                 slug=custom_slug,
                 featured_media=item.get("_featured_media_id"),
                 categories=category_ids,
+                tags=tag_ids,
                 fanza_product_id=product_id
             )
             

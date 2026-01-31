@@ -1,0 +1,224 @@
+{
+  "sd01-chichi": {
+    "theme": {
+      "style": "soft_round",
+      "subColor": "cream_pink",
+      "decor": ["rounded-lg", "soft-shadow", "gentle-gradient"]
+    },
+    "cta": {
+      "label_primary": "この迫力を確かめる",
+      "label_secondary": "揺れをチェック"
+    },
+    "stickyCta": {
+      "enabled": true,
+      "showAfterScrollPct": 40,
+      "once": true,
+      "dismissable": true,
+      "label": "続きを見る"
+    },
+    "image": {
+      "thumbShape": "rounded",
+      "shadow": "soft",
+      "hover": { "type": "scale", "scale": 1.05 }
+    },
+    "related": {
+      "priority": ["same_actress", "same_volume_tag", "same_category"]
+    }
+  },
+
+  "sd02-shirouto": {
+    "theme": {
+      "style": "flat_real",
+      "subColor": "dusty_blue",
+      "decor": ["square", "no-shadow", "flat"]
+    },
+    "cta": {
+      "label_primary": "リアルを覗く",
+      "label_secondary": "この空気感を見る"
+    },
+    "stickyCta": {
+      "enabled": false
+    },
+    "image": {
+      "thumbShape": "square",
+      "shadow": "none",
+      "hover": { "type": "none" }
+    },
+    "related": {
+      "priority": ["same_actress", "same_situation_tag", "same_category"]
+    }
+  },
+
+  "sd03-gyaru": {
+    "theme": {
+      "style": "neon_vivid",
+      "subColor": "neon_pink",
+      "decor": ["neon", "diagonal-lines", "high-contrast"]
+    },
+    "cta": {
+      "label_primary": "勢いで見る",
+      "label_secondary": "テンション上げに行く"
+    },
+    "stickyCta": {
+      "enabled": true,
+      "showAfterScrollPct": 30,
+      "once": true,
+      "dismissable": true,
+      "label": "続きを見る"
+    },
+    "image": {
+      "thumbShape": "rounded",
+      "shadow": "none",
+      "hover": { "type": "scale_glow", "scale": 1.05 }
+    },
+    "related": {
+      "priority": ["same_category", "same_actress", "similar_tags"]
+    }
+  },
+
+  "sd04-chijo": {
+    "theme": {
+      "style": "dark_contrast",
+      "subColor": "wine_red",
+      "decor": ["dark-bg", "strong-contrast", "thin-border"]
+    },
+    "cta": {
+      "label_primary": "主導権を委ねる",
+      "label_secondary": "この空気に入る"
+    },
+    "stickyCta": {
+      "enabled": true,
+      "showAfterScrollPct": 50,
+      "once": true,
+      "dismissable": true,
+      "label": "続きを見る"
+    },
+    "image": {
+      "thumbShape": "square",
+      "shadow": "thin",
+      "hover": { "type": "fade", "opacity": 0.92 }
+    },
+    "related": {
+      "priority": ["same_actress", "attack_tags", "same_category"]
+    }
+  },
+
+  "sd05-seiso": {
+    "theme": {
+      "style": "clean_pastel",
+      "subColor": "mint_beige",
+      "decor": ["thin-lines", "wide-spacing", "minimal"]
+    },
+    "cta": {
+      "label_primary": "知らない一面を見る",
+      "label_secondary": "印象が変わる瞬間"
+    },
+    "stickyCta": {
+      "enabled": false
+    },
+    "image": {
+      "thumbShape": "square",
+      "shadow": "none",
+      "hover": { "type": "fade", "opacity": 0.95 }
+    },
+    "related": {
+      "priority": ["same_actress", "gap_tags", "same_category"]
+    }
+  },
+
+  "sd06-hitozuma": {
+    "theme": {
+      "style": "lux_mature",
+      "subColor": "greige",
+      "decor": ["subtle-border", "elegant-shadow", "warm-bg"]
+    },
+    "cta": {
+      "label_primary": "秘密の続きを見る",
+      "label_secondary": "続きを知る"
+    },
+    "stickyCta": {
+      "enabled": true,
+      "showAfterScrollPct": 45,
+      "once": true,
+      "dismissable": true,
+      "label": "続きを見る"
+    },
+    "image": {
+      "thumbShape": "square",
+      "shadow": "elegant",
+      "hover": { "type": "none" }
+    },
+    "related": {
+      "priority": ["same_actress", "mature_tags", "same_category"]
+    }
+  },
+
+  "sd07-oneesan": {
+    "theme": {
+      "style": "clean_smart",
+      "subColor": "navy",
+      "decor": ["clean", "smart", "soft-border"]
+    },
+    "cta": {
+      "label_primary": "大人の魅力を見る",
+      "label_secondary": "この余裕を見る"
+    },
+    "stickyCta": {
+      "enabled": false
+    },
+    "image": {
+      "thumbShape": "square",
+      "shadow": "light",
+      "hover": { "type": "scale", "scale": 1.03 }
+    },
+    "related": {
+      "priority": ["same_actress", "adult_tags", "same_category"]
+    }
+  },
+
+  "sd08-jukujo": {
+    "theme": {
+      "style": "warm_home",
+      "subColor": "brown",
+      "decor": ["warm", "cozy", "card-border"]
+    },
+    "cta": {
+      "label_primary": "落ち着いた魅力を見る",
+      "label_secondary": "この安心感を見る"
+    },
+    "stickyCta": {
+      "enabled": false
+    },
+    "image": {
+      "thumbShape": "square",
+      "shadow": "medium",
+      "hover": { "type": "none" }
+    },
+    "related": {
+      "priority": ["same_actress", "similar_age_tags", "same_category"]
+    }
+  },
+
+  "sd09-iyashi": {
+    "theme": {
+      "style": "night_soft",
+      "subColor": "lavender",
+      "decor": ["soft", "night", "calm"]
+    },
+    "cta": {
+      "label_primary": "今日はこれにする",
+      "label_secondary": "癒しの時間へ"
+    },
+    "stickyCta": {
+      "enabled": false
+    },
+    "image": {
+      "thumbShape": "rounded",
+      "shadow": "soft",
+      "hover": { "type": "fade", "opacity": 0.95 }
+    },
+    "related": {
+      "priority": ["mood_tags", "same_actress", "same_category"]
+    }
+  }
+}

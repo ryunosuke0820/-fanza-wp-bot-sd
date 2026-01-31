@@ -74,7 +74,7 @@ def fetch_posts(wp: WPClient, per_page: int, max_pages: int, status: str) -> lis
             "orderby": "date",
             "order": "desc",
             "context": "edit",
-            "_fields": "id,status,date_gmt,date,link,slug,meta,content",
+            "_fields": "id,status,date_gmt,date,link,slug,meta,content,title,excerpt",
         }
         resp = wp._request("GET", "posts", params=params)
         if resp.status_code in (401, 403, 404):
@@ -94,33 +94,8 @@ def fetch_posts(wp: WPClient, per_page: int, max_pages: int, status: str) -> lis
 
 
 def extract_fanza_id(wp: WPClient, post: dict[str, Any]) -> str | None:
-    meta = post.get("meta", {})
-    fanza_id = None
-    if isinstance(meta, dict):
-        fanza_id = meta.get("fanza_product_id")
-    if fanza_id:
-        return str(fanza_id).lower()
-
-    slug = post.get("slug", "") or ""
-    fanza_id = wp._extract_fanza_id_from_slug(slug)
-    if fanza_id:
-        return str(fanza_id).lower()
-
-    # 最後の砦: 投稿本文内の affiliate URL から cid を拾う
-    content = post.get("content", {})
-    if isinstance(content, dict):
-        rendered = content.get("rendered", "") or ""
-    else:
-        rendered = str(content or "")
-
-    for pat in (r"(?i)cid=([A-Za-z0-9_\\-]+)", r"(?i)content_id=([A-Za-z0-9_\\-]+)"):
-        m = __import__("re").search(pat, rendered)
-        if m:
-            return m.group(1).lower()
-
-    return None
-
-
+    # Use the shared extraction logic to avoid drift.
+    return wp.extract_fanza_id(post)
 def main() -> int:
     parser = argparse.ArgumentParser(description="av-kantei.com 重複投稿の検出/削除（ゴミ箱移動）")
     parser.add_argument("--apply", action="store_true", help="実際に削除（ゴミ箱へ移動）する")
