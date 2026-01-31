@@ -484,9 +484,9 @@ class Renderer:
         
         # スタイルシートを追加
         parts.append(self._styles_template)
-        parts.append(self._SITE_DATA_SCRIPT)
-        if sticky_cfg.get("enabled"):
-            parts.append(self._STICKY_SCRIPT)
+        # NOTE: JavaScript削除 - WordPress/Cocoonが<script>タグを除去し、
+        # 中身のJSがプレーンテキストとして残り、White Screen of Deathを引き起こすため
+        # Sticky CTAのJS機能は無効化（将来的にはテーマ側かプラグインで対応）
         
         body = "\n\n".join(parts)
         # ブロックエディタのHTMLブロックとして包み、wpautopの崩れを抑制
