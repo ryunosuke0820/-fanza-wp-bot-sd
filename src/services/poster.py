@@ -92,7 +92,14 @@ class PosterService:
             
             # 画像アップロード
             featured_media_id = None
-            if not dry_run:
+            use_cdn_images = os.environ.get("USE_CDN_IMAGES", "").lower() == "true"
+            
+            if use_cdn_images:
+                logger.info("USE_CDN_IMAGES=true: 画像アップロードをスキップしてCDN URLを直接使用")
+                # パッケージ画像はそのまま (FANZA CDN URL)
+                # シーン画像もそのまま使用
+                item["sample_image_urls"] = scene_image_urls[:3]
+            elif not dry_run:
                 if item.get("package_image_url"):
                     try:
                         img_bytes, filename, mime_type = self.image_tools.download_to_bytes(item["package_image_url"])
