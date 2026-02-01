@@ -3,7 +3,11 @@
     "theme": {
       "style": "soft_round",
       "subColor": "cream_pink",
-      "decor": ["rounded-lg", "soft-shadow", "gentle-gradient"]
+      "decor": [
+        "rounded-lg",
+        "soft-shadow",
+        "gentle-gradient"
+      ]
     },
     "cta": {
       "label_primary": "この迫力を確かめる",
@@ -19,18 +23,28 @@
     "image": {
       "thumbShape": "rounded",
       "shadow": "soft",
-      "hover": { "type": "scale", "scale": 1.05 }
+      "hover": {
+        "type": "scale",
+        "scale": 1.05
+      }
     },
     "related": {
-      "priority": ["same_actress", "same_volume_tag", "same_category"]
+      "priority": [
+        "same_actress",
+        "same_volume_tag",
+        "same_category"
+      ]
     }
   },
-
   "sd02-shirouto": {
     "theme": {
       "style": "flat_real",
       "subColor": "dusty_blue",
-      "decor": ["square", "no-shadow", "flat"]
+      "decor": [
+        "square",
+        "no-shadow",
+        "flat"
+      ]
     },
     "cta": {
       "label_primary": "リアルを覗く",
@@ -42,18 +56,27 @@
     "image": {
       "thumbShape": "square",
       "shadow": "none",
-      "hover": { "type": "none" }
+      "hover": {
+        "type": "none"
+      }
     },
     "related": {
-      "priority": ["same_actress", "same_situation_tag", "same_category"]
+      "priority": [
+        "same_actress",
+        "same_situation_tag",
+        "same_category"
+      ]
     }
   },
-
   "sd03-gyaru": {
     "theme": {
       "style": "neon_vivid",
       "subColor": "neon_pink",
-      "decor": ["neon", "diagonal-lines", "high-contrast"]
+      "decor": [
+        "neon",
+        "diagonal-lines",
+        "high-contrast"
+      ]
     },
     "cta": {
       "label_primary": "勢いで見る",
@@ -69,18 +92,28 @@
     "image": {
       "thumbShape": "rounded",
       "shadow": "none",
-      "hover": { "type": "scale_glow", "scale": 1.05 }
+      "hover": {
+        "type": "scale_glow",
+        "scale": 1.05
+      }
     },
     "related": {
-      "priority": ["same_category", "same_actress", "similar_tags"]
+      "priority": [
+        "same_category",
+        "same_actress",
+        "similar_tags"
+      ]
     }
   },
-
   "sd04-chijo": {
     "theme": {
       "style": "dark_contrast",
       "subColor": "wine_red",
-      "decor": ["dark-bg", "strong-contrast", "thin-border"]
+      "decor": [
+        "dark-bg",
+        "strong-contrast",
+        "thin-border"
+      ]
     },
     "cta": {
       "label_primary": "主導権を委ねる",
@@ -96,18 +129,28 @@
     "image": {
       "thumbShape": "square",
       "shadow": "thin",
-      "hover": { "type": "fade", "opacity": 0.92 }
+      "hover": {
+        "type": "fade",
+        "opacity": 0.92
+      }
     },
     "related": {
-      "priority": ["same_actress", "attack_tags", "same_category"]
+      "priority": [
+        "same_actress",
+        "attack_tags",
+        "same_category"
+      ]
     }
   },
-
   "sd05-seiso": {
     "theme": {
       "style": "clean_pastel",
       "subColor": "mint_beige",
-      "decor": ["thin-lines", "wide-spacing", "minimal"]
+      "decor": [
+        "thin-lines",
+        "wide-spacing",
+        "minimal"
+      ]
     },
     "cta": {
       "label_primary": "知らない一面を見る",
@@ -119,18 +162,28 @@
     "image": {
       "thumbShape": "square",
       "shadow": "none",
-      "hover": { "type": "fade", "opacity": 0.95 }
+      "hover": {
+        "type": "fade",
+        "opacity": 0.95
+      }
     },
     "related": {
-      "priority": ["same_actress", "gap_tags", "same_category"]
+      "priority": [
+        "same_actress",
+        "gap_tags",
+        "same_category"
+      ]
     }
   },
-
   "sd06-hitozuma": {
     "theme": {
       "style": "lux_mature",
       "subColor": "greige",
-      "decor": ["subtle-border", "elegant-shadow", "warm-bg"]
+      "decor": [
+        "subtle-border",
+        "elegant-shadow",
+        "warm-bg"
+      ]
     },
     "cta": {
       "label_primary": "秘密の続きを見る",
@@ -146,18 +199,27 @@
     "image": {
       "thumbShape": "square",
       "shadow": "elegant",
-      "hover": { "type": "none" }
+      "hover": {
+        "type": "none"
+      }
     },
     "related": {
-      "priority": ["same_actress", "mature_tags", "same_category"]
+      "priority": [
+        "same_actress",
+        "mature_tags",
+        "same_category"
+      ]
     }
   },
-
   "sd07-oneesan": {
     "theme": {
       "style": "clean_smart",
       "subColor": "navy",
-      "decor": ["clean", "smart", "soft-border"]
+      "decor": [
+        "clean",
+        "smart",
+        "soft-border"
+      ]
     },
     "cta": {
       "label_primary": "大人の魅力を見る",
@@ -169,18 +231,28 @@
     "image": {
       "thumbShape": "square",
       "shadow": "light",
-      "hover": { "type": "scale", "scale": 1.03 }
+      "hover": {
+        "type": "scale",
+        "scale": 1.03
+      }
     },
     "related": {
-      "priority": ["same_actress", "adult_tags", "same_category"]
+      "priority": [
+        "same_actress",
+        "adult_tags",
+        "same_category"
+      ]
     }
   },
-
   "sd08-jukujo": {
     "theme": {
       "style": "warm_home",
       "subColor": "brown",
-      "decor": ["warm", "cozy", "card-border"]
+      "decor": [
+        "warm",
+        "cozy",
+        "card-border"
+      ]
     },
     "cta": {
       "label_primary": "落ち着いた魅力を見る",
@@ -192,18 +264,27 @@
     "image": {
       "thumbShape": "square",
       "shadow": "medium",
-      "hover": { "type": "none" }
+      "hover": {
+        "type": "none"
+      }
     },
     "related": {
-      "priority": ["same_actress", "similar_age_tags", "same_category"]
+      "priority": [
+        "same_actress",
+        "similar_age_tags",
+        "same_category"
+      ]
     }
   },
-
   "sd09-iyashi": {
     "theme": {
       "style": "night_soft",
       "subColor": "lavender",
-      "decor": ["soft", "night", "calm"]
+      "decor": [
+        "soft",
+        "night",
+        "calm"
+      ]
     },
     "cta": {
       "label_primary": "今日はこれにする",
@@ -215,10 +296,50 @@
     "image": {
       "thumbShape": "rounded",
       "shadow": "soft",
-      "hover": { "type": "fade", "opacity": 0.95 }
+      "hover": {
+        "type": "fade",
+        "opacity": 0.95
+      }
     },
     "related": {
-      "priority": ["mood_tags", "same_actress", "same_category"]
+      "priority": [
+        "mood_tags",
+        "same_actress",
+        "same_category"
+      ]
+    }
+  },
+  "sd10-otona": {
+    "theme": {
+      "style": "modern_teal",
+      "subColor": "turquoise",
+      "decor": [
+        "modern",
+        "teal",
+        "clean"
+      ]
+    },
+    "cta": {
+      "label_primary": "今すぐ楽しむ",
+      "label_secondary": "詳細を見る"
+    },
+    "stickyCta": {
+      "enabled": false
+    },
+    "image": {
+      "thumbShape": "square",
+      "shadow": "medium",
+      "hover": {
+        "type": "scale",
+        "scale": 1.05
+      }
+    },
+    "related": {
+      "priority": [
+        "same_category",
+        "similar_tags",
+        "same_actress"
+      ]
     }
   }
 }
