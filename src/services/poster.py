@@ -116,7 +116,8 @@ class PosterService:
                         return {"error": "placeholder", "index": index}
                     except Exception as e:
                         logger.error(f"画像アップロード失敗: {url} - {e}")
-                        return {"error": str(e), "index": index}
+                        # アップロード失敗時はオリジナルのCDN URLをフォールバックとして使用
+                        return {"index": index, "url": url, "id": None, "is_featured": is_featured, "fallback": True}
 
                 upload_jobs = []
                 # シーン画像
