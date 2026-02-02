@@ -112,7 +112,7 @@
   "sd04-chijo": {
     "theme": {
       "style": "dark_contrast",
-      "subColor": "teal",
+      "subColor": "wine_red",
       "decor": [
         "dark-bg",
         "strong-contrast",
@@ -326,6 +326,43 @@
         "mood_tags",
         "same_actress",
         "same_category"
+      ]
+    }
+  },
+  "sd10-otona": {
+    "theme": {
+      "style": "clean_modern",
+      "subColor": "teal",
+      "decor": [
+        "modern",
+        "clean",
+        "teal-accent"
+      ]
+    },
+    "cta": {
+      "label_primary": "\u5927\u4eba\u306e\u6109\u3057\u307f\u3092\u5473\u308f\u3046",
+      "label_secondary": "????????"
+    },
+    "stickyCta": {
+      "enabled": true,
+      "showAfterScrollPct": 0,
+      "once": true,
+      "dismissable": true,
+      "label": "\u7d9a\u304d\u3092\u898b\u308b"
+    },
+    "image": {
+      "thumbShape": "square",
+      "shadow": "medium",
+      "hover": {
+        "type": "fade",
+        "opacity": 0.95
+      }
+    },
+    "related": {
+      "priority": [
+        "same_actress",
+        "same_category",
+        "same_maker"
       ]
     }
   }
