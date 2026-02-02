@@ -10,15 +10,15 @@
       ]
     },
     "cta": {
-      "label_primary": "Purchase here",
-      "label_secondary": "Purchase here"
+      "label_primary": "???????????",
+      "label_secondary": "????????"
     },
     "stickyCta": {
       "enabled": true,
       "showAfterScrollPct": 0,
       "once": true,
       "dismissable": true,
-      "label": "Purchase here"
+      "label": "???????????"
     },
     "image": {
       "thumbShape": "rounded",
@@ -47,15 +47,15 @@
       ]
     },
     "cta": {
-      "label_primary": "Purchase here",
-      "label_secondary": "Purchase here"
+      "label_primary": "???????????",
+      "label_secondary": "????????"
     },
     "stickyCta": {
       "enabled": true,
       "showAfterScrollPct": 0,
       "once": true,
       "dismissable": true,
-      "label": "Purchase here"
+      "label": "???????????"
     },
     "image": {
       "thumbShape": "square",
@@ -83,15 +83,15 @@
       ]
     },
     "cta": {
-      "label_primary": "Purchase here",
-      "label_secondary": "Purchase here"
+      "label_primary": "???????????",
+      "label_secondary": "????????"
     },
     "stickyCta": {
       "enabled": true,
       "showAfterScrollPct": 0,
       "once": true,
       "dismissable": true,
-      "label": "Purchase here"
+      "label": "???????????"
     },
     "image": {
       "thumbShape": "rounded",
@@ -120,15 +120,15 @@
       ]
     },
     "cta": {
-      "label_primary": "Purchase here",
-      "label_secondary": "Purchase here"
+      "label_primary": "???????????",
+      "label_secondary": "????????"
     },
     "stickyCta": {
       "enabled": true,
       "showAfterScrollPct": 0,
       "once": true,
       "dismissable": true,
-      "label": "Purchase here"
+      "label": "???????????"
     },
     "image": {
       "thumbShape": "square",
@@ -157,15 +157,15 @@
       ]
     },
     "cta": {
-      "label_primary": "Purchase here",
-      "label_secondary": "Purchase here"
+      "label_primary": "???????????",
+      "label_secondary": "????????"
     },
     "stickyCta": {
       "enabled": true,
       "showAfterScrollPct": 0,
       "once": true,
       "dismissable": true,
-      "label": "Purchase here"
+      "label": "???????????"
     },
     "image": {
       "thumbShape": "square",
@@ -194,15 +194,15 @@
       ]
     },
     "cta": {
-      "label_primary": "Purchase here",
-      "label_secondary": "Purchase here"
+      "label_primary": "???????????",
+      "label_secondary": "????????"
     },
     "stickyCta": {
       "enabled": true,
       "showAfterScrollPct": 0,
       "once": true,
       "dismissable": true,
-      "label": "Purchase here"
+      "label": "???????????"
     },
     "image": {
       "thumbShape": "square",
@@ -230,15 +230,15 @@
       ]
     },
     "cta": {
-      "label_primary": "Purchase here",
-      "label_secondary": "Purchase here"
+      "label_primary": "???????????",
+      "label_secondary": "????????"
     },
     "stickyCta": {
       "enabled": true,
       "showAfterScrollPct": 0,
       "once": true,
       "dismissable": true,
-      "label": "Purchase here"
+      "label": "???????????"
     },
     "image": {
       "thumbShape": "square",
@@ -267,15 +267,15 @@
       ]
     },
     "cta": {
-      "label_primary": "Purchase here",
-      "label_secondary": "Purchase here"
+      "label_primary": "???????????",
+      "label_secondary": "????????"
     },
     "stickyCta": {
       "enabled": true,
       "showAfterScrollPct": 0,
       "once": true,
       "dismissable": true,
-      "label": "Purchase here"
+      "label": "???????????"
     },
     "image": {
       "thumbShape": "square",
@@ -303,15 +303,15 @@
       ]
     },
     "cta": {
-      "label_primary": "Purchase here",
-      "label_secondary": "Purchase here"
+      "label_primary": "???????????",
+      "label_secondary": "????????"
     },
     "stickyCta": {
       "enabled": true,
       "showAfterScrollPct": 0,
       "once": true,
       "dismissable": true,
-      "label": "Purchase here"
+      "label": "???????????"
     },
     "image": {
       "thumbShape": "rounded",
