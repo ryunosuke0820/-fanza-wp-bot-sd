@@ -184,7 +184,7 @@ class Renderer:
     def _load_site_decor(self) -> dict:
         """サイトテーマ設定を読み込み (site_theme_config.json を優先)"""
         # 新しい設定ファイルを優先
-        new_path = self.templates_dir.parent / "site_theme_config.json"
+        new_path = self.templates_dir.parent.parent / "site_theme_config.json"
         if new_path.exists():
             try:
                 data = json.loads(new_path.read_text(encoding="utf-8"))
@@ -194,7 +194,7 @@ class Renderer:
                 logger.warning(f"site_theme_config.json parse error: {exc}")
         
         # フォールバック: 旧形式
-        path = self.templates_dir.parent / "data" / "site_decor.json"
+        path = self.templates_dir.parent.parent / "data" / "site_decor.json"
         if not path.exists():
             return {}
         try:

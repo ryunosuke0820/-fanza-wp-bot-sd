@@ -142,7 +142,7 @@ def main():
     fanza_client = FanzaClient(config.fanza_api_key, affiliate_id)
     llm_client = OpenAIClient(config.openai_api_key, config.openai_model, config.prompts_dir, config.base_dir / "viewpoints.json")
     wp_client = WPClient(config.wp_base_url, config.wp_username, config.wp_app_password)
-    renderer = Renderer(config.base_dir / "templates")
+    renderer = Renderer(config.base_dir / "layout_premium")
     dedupe_key = resolved_subdomain or "default"
     dedupe_store = DedupeStore(config.data_dir / f"posted_{dedupe_key}.sqlite3")
     image_tools = ImageTools()

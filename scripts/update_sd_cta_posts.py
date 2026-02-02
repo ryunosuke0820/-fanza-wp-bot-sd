@@ -279,8 +279,26 @@ body[data-site^="sd"] {
   --aa-cta-text: #fff;
 }
 body[data-site="sd07-oneesan"] {
+  --aa-bg: #fff7fb;
+  --aa-card: #ffffff;
+  --aa-text: #1f2330;
+  --aa-muted: rgba(31, 35, 48, .66);
+  --aa-line: rgba(31, 35, 48, .10);
+  --aa-shadow: 0 10px 24px rgba(255, 164, 206, .18);
+  --aa-accent: #ff6fb1;
+  --aa-accent2: #ffd1e6;
   --aa-cta-accent: var(--aa-accent);
   --aa-cta-accent2: var(--aa-accent2);
+}
+body[data-site="sd01-chichi"] {
+  --aa-bg: #fff7fb;
+  --aa-card: #ffffff;
+  --aa-text: #1f2330;
+  --aa-muted: rgba(31, 35, 48, .66);
+  --aa-line: rgba(31, 35, 48, .10);
+  --aa-shadow: 0 10px 24px rgba(255, 164, 206, .18);
+  --aa-accent: #ff6fb1;
+  --aa-accent2: #ffd1e6;
 }
 body[data-site="sd07-oneesan"],
 body[data-site="sd07-oneesan"] .site,
