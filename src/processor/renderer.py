@@ -455,8 +455,8 @@ class Renderer:
         cta_external_line = None
         if site_id.startswith("sd"):
             hero_cta_label = "今すぐ無料サンプルを見る"
-            hero_subline_1 = "※会員登録なし / 安心の公式DMMリンク"
-            hero_subline_2 = ""
+            hero_subline_1 = "※本ページは成人向け内容を含みます。18歳未満の方は閲覧できません。"
+            hero_subline_2 = "※当サイトはアフィリエイト広告を利用しています。"
             hero_external_label = "DMM.co.jp（公式）"
             cta_primary = "今すぐこの快楽を本編で堪能する"
             cta_note_3 = "※DMM.co.jp（公式）へ移動します"
