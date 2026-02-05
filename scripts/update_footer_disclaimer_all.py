@@ -25,7 +25,7 @@ DISCLAIMER_HTML = (
     'style="text-align:center; padding:16px 18px; background: rgba(0,0,0,0.02); '
     'border-radius: 8px; margin: 10px 0 20px; font-size: 14px; color: #e60000; '
     'border: 1px solid rgba(0,0,0,0.05); clear: both; font-weight: 700; line-height: 1.6; letter-spacing: .02em;">'
-    "<div>※ 本ページは成人向け内容を含みます。</div>"
+    "<div>※本ページは成人向け内容を含みます。</div>"
     "<div>18歳未満の方は閲覧できません。</div>"
     "</div>"
 )
@@ -72,7 +72,7 @@ def update_site(subdomain: str) -> None:
         w = _get_json(f"{widgets_url}/{wid}?context=edit")
         raw = (w.get("instance", {}) or {}).get("raw", {})
         content = raw.get("content", "")
-        if "adult-disclaimer" in content or "成人向け内容" in content:
+        if "adult-disclaimer" in content or "※本ページは成人向け内容を含みます。" in content:
             disclaimer_id = wid
             if _normalize_html(content) != _normalize_html(DISCLAIMER_HTML):
                 raw["content"] = DISCLAIMER_HTML
