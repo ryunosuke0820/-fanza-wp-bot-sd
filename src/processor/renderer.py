@@ -1,6 +1,7 @@
 import json
 import re
 import logging
+import html
 from pathlib import Path
 from typing import Any
 
@@ -418,6 +419,152 @@ class Renderer:
             html = html.replace(f"{{FAQ_A{i+1}}}", a)
         return html
 
+    def _escape(self, value: Any) -> str:
+        return html.escape(str(value or ""), quote=True)
+
+    def _first_non_empty(self, values: list[str], fallback: str) -> str:
+        for v in values:
+            if isinstance(v, str) and v.strip():
+                return v.strip()
+        return fallback
+
+    def _render_post_content_main(self, item: dict, ai_response: dict, related_posts: list[dict] | None = None) -> str:
+        title = self._escape(item.get("title", ""))
+        package_image = self._escape(item.get("package_image_url", ""))
+        aff_url = self._escape(item.get("affiliate_url", ""))
+        short_desc = self._escape(ai_response.get("short_description", ""))
+        highlights = ai_response.get("highlights", []) or []
+        scenes = ai_response.get("scenes", []) or []
+
+        tsukkomi = self._first_non_empty(
+            [
+                (highlights[0] if len(highlights) > 0 else ""),
+                (scenes[0].get("feature_check", "") if len(scenes) > 0 and isinstance(scenes[0], dict) else ""),
+            ],
+            "正直、ストーリー期待したら負けやで。",
+        )
+        suit = self._first_non_empty(
+            [
+                (highlights[1] if len(highlights) > 1 else ""),
+                (scenes[0].get("feature_label", "") if len(scenes) > 0 and isinstance(scenes[0], dict) else ""),
+            ],
+            "今日は何も考えたくない人。",
+        )
+        not_suit = self._first_non_empty(
+            [
+                (highlights[2] if len(highlights) > 2 else ""),
+                (scenes[1].get("feature_label", "") if len(scenes) > 1 and isinstance(scenes[1], dict) else ""),
+            ],
+            "自己肯定感が落ちてる人。",
+        )
+        caution = self._first_non_empty(
+            [short_desc],
+            "見終わったあと、ちょっと虚無くる可能性ある。",
+        )
+
+        related_html = ""
+        related_posts = related_posts or []
+        if related_posts:
+            links = []
+            for post in related_posts[:4]:
+                link = self._escape(post.get("link", ""))
+                label = self._escape(post.get("title", ""))
+                if link and label:
+                    links.append(f'<li><a href="{link}" rel="noopener">{label}</a></li>')
+            if links:
+                related_html = f"""
+<section class="main-kantei-card">
+  <h2 class="main-kantei-h2">最近ツッコんだテーマ</h2>
+  <ul class="main-kantei-list">
+    {''.join(links)}
+  </ul>
+</section>
+"""
+
+        body = f"""
+<div class="main-kantei-wrap aa-wrap aa-site-main" data-site="main">
+  <header class="main-kantei-header">
+    <p class="main-kantei-message">今日の気分、間違えたらあかんで。</p>
+    <nav class="main-kantei-subnav" aria-label="sub routes">
+      <a href="https://av-kantei.com/category/%E5%8B%95%E7%94%BB/">夜中向け</a>
+      <a href="https://av-kantei.com/category/%E5%8B%95%E7%94%BB/">疲れてる人向け</a>
+      <a href="https://av-kantei.com/category/%E5%8B%95%E7%94%BB/">逃げたい日向け</a>
+    </nav>
+  </header>
+
+  <article class="main-kantei-card">
+    <div class="main-kantei-top">
+      <div>
+        <h1 class="main-kantei-title">{title}</h1>
+        <p class="main-kantei-lead">今、どれや？迷ってるなら、先に状況で決めたらええ。</p>
+      </div>
+      <img class="main-kantei-thumb" src="{package_image}" alt="{title}" loading="lazy" />
+    </div>
+  </article>
+
+  <section class="main-kantei-card">
+    <h2 class="main-kantei-h2">今日の前提</h2>
+    <p class="main-kantei-text">今、夜中で／一人で／ちょっと負けてる日やったら、これはアリ。</p>
+  </section>
+
+  <section class="main-kantei-card">
+    <h2 class="main-kantei-h2">一言ツッコミ</h2>
+    <p class="main-kantei-text">{self._escape(tsukkomi)}</p>
+  </section>
+
+  <section class="main-kantei-card">
+    <h2 class="main-kantei-h2">向いてる／向いてない</h2>
+    <p class="main-kantei-label">向いてる人</p>
+    <p class="main-kantei-text">{self._escape(suit)}</p>
+    <p class="main-kantei-label">やめといた方がええ人</p>
+    <p class="main-kantei-text">{self._escape(not_suit)}</p>
+  </section>
+
+  <section class="main-kantei-card">
+    <h2 class="main-kantei-h2">注意点</h2>
+    <p class="main-kantei-text">{self._escape(caution)}</p>
+  </section>
+
+  <section class="main-kantei-card">
+    <h2 class="main-kantei-h2">見るかどうか</h2>
+    <p class="main-kantei-text">見るなら止めへん。<br/>ただ、今押すかは自分で決め。</p>
+    <a class="main-kantei-btn" href="{aff_url}" rel="nofollow noopener" target="_blank">見る</a>
+  </section>
+
+  {related_html}
+
+  <footer class="main-kantei-footer">
+    <p>これは鑑定や。正解ちゃう。</p>
+    <p>最後に決めるんは、いつも自分やで。</p>
+  </footer>
+</div>
+
+<style>
+.main-kantei-wrap {{ max-width: 860px; margin: 0 auto; padding: 20px 14px 36px; background: #f7f7f7; color: #222; font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; line-height: 1.8; }}
+.main-kantei-header {{ margin-bottom: 14px; }}
+.main-kantei-message {{ font-size: 20px; font-weight: 700; margin: 0 0 8px; }}
+.main-kantei-subnav a {{ color: #666; font-size: 13px; margin-right: 12px; text-decoration: none; border-bottom: 1px solid #bbb; }}
+.main-kantei-card {{ background: #fff; border: 1px solid #dfdfdf; padding: 14px; margin: 10px 0; }}
+.main-kantei-top {{ display: grid; gap: 12px; grid-template-columns: 1fr 140px; align-items: start; }}
+.main-kantei-title {{ margin: 0 0 8px; font-size: 24px; line-height: 1.45; font-weight: 700; }}
+.main-kantei-lead {{ margin: 0; color: #555; }}
+.main-kantei-thumb {{ width: 140px; height: auto; border: 1px solid #ddd; }}
+.main-kantei-h2 {{ margin: 0 0 8px; font-size: 18px; }}
+.main-kantei-label {{ margin: 8px 0 4px; font-weight: 700; }}
+.main-kantei-text {{ margin: 0; }}
+.main-kantei-list {{ margin: 0; padding-left: 18px; }}
+.main-kantei-list a {{ color: #1d4ed8; text-decoration: none; border-bottom: 1px solid #9ab6f0; }}
+.main-kantei-btn {{ display: inline-block; margin-top: 10px; padding: 8px 14px; border: 1px solid #c7c7c7; background: #f9f9f9; color: #333; text-decoration: none; }}
+.main-kantei-footer {{ margin-top: 22px; font-size: 14px; color: #444; }}
+.main-kantei-footer p {{ margin: 0; }}
+@media (max-width: 700px) {{
+  .main-kantei-top {{ grid-template-columns: 1fr; }}
+  .main-kantei-thumb {{ width: 100%; max-width: 220px; }}
+}}
+</style>
+"""
+        return f"<!-- wp:html -->\n{body}\n<!-- /wp:html -->"
+
     def render_post_content(
         self,
         item: dict,
@@ -426,6 +573,8 @@ class Renderer:
         related_posts: list[dict] | None = None,
     ) -> str:
         """投稿本文全体を生成"""
+        if site_id == "main":
+            return self._render_post_content_main(item, ai_response, related_posts=related_posts)
         parts = []
         
         # 全体をSITE_IDでラップ

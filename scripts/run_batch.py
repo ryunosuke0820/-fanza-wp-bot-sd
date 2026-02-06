@@ -7,6 +7,7 @@ import sys
 import time
 import io
 import random
+from types import SimpleNamespace
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
@@ -151,6 +152,8 @@ def main():
     wp_client = WPClient(config.wp_base_url, config.wp_username, config.wp_app_password)
     renderer = Renderer(config.base_dir / "layout_premium")
     dedupe_key = args.dedupe_key.strip() or resolved_subdomain or "default"
+    if site_info is None and dedupe_key == "main":
+        site_info = SimpleNamespace(subdomain="main", title="鑑定所", tagline="関西弁で判断を代行")
     dedupe_store = DedupeStore(config.data_dir / f"posted_{dedupe_key}.sqlite3")
     image_tools = ImageTools()
     
