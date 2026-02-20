@@ -171,6 +171,10 @@ def _site_credentials(config, site_id: str) -> tuple[str, str]:
     if site_pw:
         pw = site_pw
         logger.info("[%s] credentials override: password key=%s", site_id, pw_key)
+    if not user or not pw:
+        raise ValueError(
+            f"missing credentials for {site_id} (expected WP_USERNAME/WP_APP_PASSWORD or {user_key}/{pw_key})"
+        )
     return user, pw
 
 
@@ -184,8 +188,6 @@ class PublishConfig:
 def _load_publish_config() -> PublishConfig:
     wp_username = (os.getenv("WP_USERNAME") or "").strip()
     wp_app_password = (os.getenv("WP_APP_PASSWORD") or "").strip()
-    if not wp_username or not wp_app_password:
-        raise ValueError("Missing WP credentials: WP_USERNAME and/or WP_APP_PASSWORD")
     return PublishConfig(
         base_dir=ROOT,
         wp_username=wp_username,

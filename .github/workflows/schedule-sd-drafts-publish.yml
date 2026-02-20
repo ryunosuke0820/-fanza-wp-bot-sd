@@ -53,11 +53,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -z "${WP_USERNAME:-}" ] || [ -z "${WP_APP_PASSWORD:-}" ]; then
-            echo "Missing required secrets: WP_USERNAME, WP_APP_PASSWORD" >&2
-            exit 1
-          fi
-
           {
             echo "WP_BASE_URL=https://av-kantei.com"
             echo "WP_USERNAME=${WP_USERNAME}"
@@ -86,6 +81,12 @@ jobs:
             echo "MAX_CHARS=1300"
             echo "POST_STATUS=draft"
           } > .env
+
+          echo "Secret presence check:"
+          [ -n "${WP_USERNAME:-}" ] && echo "WP_USERNAME=SET" || echo "WP_USERNAME=EMPTY"
+          [ -n "${WP_APP_PASSWORD:-}" ] && echo "WP_APP_PASSWORD=SET" || echo "WP_APP_PASSWORD=EMPTY"
+          [ -n "${WP_USERNAME_SD04:-}" ] && echo "WP_USERNAME_SD04=SET" || echo "WP_USERNAME_SD04=EMPTY"
+          [ -n "${WP_APP_PASSWORD_SD04:-}" ] && echo "WP_APP_PASSWORD_SD04=SET" || echo "WP_APP_PASSWORD_SD04=EMPTY"
         env:
           WP_USERNAME: ${{ secrets.WP_USERNAME }}
           WP_USERNAME_SD01: ${{ secrets.WP_USERNAME_SD01 }}
