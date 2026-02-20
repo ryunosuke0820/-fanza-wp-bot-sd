@@ -1,4 +1,4 @@
-name: Schedule SD Drafts Publish
+name: Publish SD Drafts Now
 
 on:
   workflow_dispatch:
@@ -12,24 +12,16 @@ on:
         required: false
         default: "false"
       max_items:
-        description: "How many posts to schedule in this run (0 = all)"
+        description: "How many draft posts to publish in this run (0 = all)"
         required: false
         default: "10"
-      interval_minutes:
-        description: "Slot interval minutes"
-        required: false
-        default: "12"
-      start_jst:
-        description: "Optional start datetime JST (ISO8601)"
-        required: false
-        default: ""
 
   schedule:
     # every 2 hours
     - cron: "0 */2 * * *"
 
 concurrency:
-  group: schedule-sd-drafts-publish
+  group: publish-sd-drafts-now
   cancel-in-progress: false
 
 jobs:
@@ -53,7 +45,7 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Prepare .env for scheduler
+      - name: Prepare .env for publisher
         run: |
           set -euo pipefail
 
@@ -100,36 +92,32 @@ jobs:
           WP_APP_PASSWORD_SD09: ${{ secrets.WP_APP_PASSWORD_SD09 }}
           WP_APP_PASSWORD_SD10: ${{ secrets.WP_APP_PASSWORD_SD10 }}
 
-      - name: Run scheduler
+      - name: Run publisher
         run: |
           set -euo pipefail
 
           DRY_RUN="${{ github.event.inputs.dry_run }}"
           RESET_PROGRESS="${{ github.event.inputs.reset_progress }}"
           MAX_ITEMS="${{ github.event.inputs.max_items }}"
-          INTERVAL_MINUTES="${{ github.event.inputs.interval_minutes }}"
-          START_JST="${{ github.event.inputs.start_jst }}"
 
           # Defaults for scheduled runs (workflow_dispatch inputs are empty on cron)
           if [ -z "${MAX_ITEMS}" ]; then MAX_ITEMS="10"; fi
-          if [ -z "${INTERVAL_MINUTES}" ]; then INTERVAL_MINUTES="12"; fi
           if [ -z "${DRY_RUN}" ]; then DRY_RUN="false"; fi
           if [ -z "${RESET_PROGRESS}" ]; then RESET_PROGRESS="false"; fi
 
-          CMD="python scripts/schedule_sd_drafts_publish.py --interval-minutes ${INTERVAL_MINUTES} --max-items ${MAX_ITEMS} --output-dir data/schedule_publish_sd"
+          CMD="python scripts/publish_sd_drafts_now.py --max-items ${MAX_ITEMS} --output-dir data/publish_sd_drafts"
           if [ "${DRY_RUN}" = "true" ]; then CMD="${CMD} --dry-run"; fi
           if [ "${RESET_PROGRESS}" = "true" ]; then CMD="${CMD} --reset-progress"; fi
-          if [ -n "${START_JST}" ]; then CMD="${CMD} --start-jst ${START_JST}"; fi
 
           echo "Running: ${CMD}"
           eval "${CMD}"
 
-      - name: Upload scheduler outputs
+      - name: Upload publisher outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: schedule-publish-sd
-          path: data/schedule_publish_sd/
+          name: publish-sd-drafts
+          path: data/publish_sd_drafts/
           if-no-files-found: ignore
 
       - name: Commit progress/manifest
@@ -139,8 +127,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase || true
-          git add data/schedule_publish_sd/progress.json data/schedule_publish_sd/manifest.json .env || true
+          git add data/publish_sd_drafts/progress.json data/publish_sd_drafts/manifest.json .env || true
           git restore --staged .env || true
           git checkout -- .env || true
-          git diff --staged --quiet || git commit -m "chore: update schedule publish progress"
+          git diff --staged --quiet || git commit -m "chore: update publish drafts progress"
           git push || true
