@@ -194,6 +194,7 @@ def _save_manifest(
     dry_run: bool,
     run_entries: list[dict[str, Any]],
     max_items: int,
+    max_per_site: int,
 ) -> None:
     merged_entries = _load_manifest_entries(output_dir)
     merged_entries.extend(run_entries)
@@ -205,6 +206,7 @@ def _save_manifest(
         "status_filter": status_filter,
         "dry_run": dry_run,
         "max_items": max_items,
+        "max_per_site": max_per_site,
         "entries": merged_entries,
     }
     _manifest_path(output_dir).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -247,6 +249,7 @@ def _build_site_queue(
     status_filter: str,
     max_pages: int,
     processed_ids: set[int],
+    max_per_site: int,
 ) -> deque[QueueItem]:
     posts: list[dict[str, Any]] = []
     for post in wp_client.iter_posts(
@@ -273,6 +276,8 @@ def _build_site_queue(
                 status_before=str(post.get("status", "") or ""),
             )
         )
+        if max_per_site > 0 and len(q) >= max_per_site:
+            break
     return q
 
 
@@ -282,6 +287,7 @@ def main() -> None:
     parser.add_argument("--start-jst", type=str, default="", help="ISO datetime in JST (e.g. 2026-02-20T00:00:00+09:00)")
     parser.add_argument("--interval-minutes", type=int, default=12)
     parser.add_argument("--max-items", type=int, default=0, help="0 means all available")
+    parser.add_argument("--max-per-site", type=int, default=0, help="0 means no per-site cap")
     parser.add_argument("--max-pages", type=int, default=50)
     parser.add_argument("--status-filter", type=str, default="draft")
     parser.add_argument("--dry-run", action="store_true")
@@ -293,6 +299,8 @@ def main() -> None:
         raise ValueError("--interval-minutes must be > 0")
     if args.max_pages <= 0:
         raise ValueError("--max-pages must be > 0")
+    if args.max_per_site < 0:
+        raise ValueError("--max-per-site must be >= 0")
     if args.status_filter.strip().lower() != "draft":
         raise ValueError("This scheduler only supports --status-filter draft")
 
@@ -330,6 +338,7 @@ def main() -> None:
             status_filter=status_filter,
             max_pages=max(1, args.max_pages),
             processed_ids=processed_ids,
+            max_per_site=int(args.max_per_site or 0),
         )
         logger.info("[%s] queued drafts: %s", site_id, len(site_queues[site_id]))
 
@@ -399,7 +408,12 @@ def main() -> None:
                 row["reason"] = str(exc)
 
         run_entries.append(row)
-        progress["processed_post_ids"].append(item.post_id)
+        should_mark_processed = (
+            row["action"] == "updated"
+            or (row["action"] == "skipped" and row["reason"].startswith("status_"))
+        )
+        if should_mark_processed:
+            progress["processed_post_ids"].append(item.post_id)
         if row["action"] == "updated":
             progress["total_scheduled"] = int(progress.get("total_scheduled", 0) or 0) + 1
             per_site = progress.get("per_site_scheduled", {})
@@ -427,6 +441,7 @@ def main() -> None:
         dry_run=bool(args.dry_run),
         run_entries=run_entries,
         max_items=max_items,
+        max_per_site=int(args.max_per_site or 0),
     )
 
     updated = sum(1 for r in run_entries if r["action"] == "updated")

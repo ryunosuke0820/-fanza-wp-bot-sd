@@ -23,10 +23,14 @@ on:
         description: "Interval minutes between slots"
         required: false
         default: "12"
-      max_items:
-        description: "How many draft posts to schedule in this run (0 = all)"
+      per_site_items:
+        description: "How many draft posts to schedule per site in this run (0 = no cap)"
         required: false
-        default: "100"
+        default: "10"
+      max_items:
+        description: "Total cap across sites (0 = all queued after per-site cap)"
+        required: false
+        default: "0"
 
   schedule:
     # daily 00:00 JST (= 15:00 UTC previous day)
@@ -127,17 +131,19 @@ jobs:
           RESET_PROGRESS="${{ github.event.inputs.reset_progress }}"
           START_JST="${{ github.event.inputs.start_jst }}"
           INTERVAL_MINUTES="${{ github.event.inputs.interval_minutes }}"
+          PER_SITE_ITEMS="${{ github.event.inputs.per_site_items }}"
           MAX_ITEMS="${{ github.event.inputs.max_items }}"
           SITES="${{ github.event.inputs.sites }}"
 
           # Defaults for scheduled runs (workflow_dispatch inputs are empty on cron)
-          if [ -z "${MAX_ITEMS}" ]; then MAX_ITEMS="100"; fi
+          if [ -z "${MAX_ITEMS}" ]; then MAX_ITEMS="0"; fi
           if [ -z "${DRY_RUN}" ]; then DRY_RUN="false"; fi
           if [ -z "${RESET_PROGRESS}" ]; then RESET_PROGRESS="false"; fi
           if [ -z "${INTERVAL_MINUTES}" ]; then INTERVAL_MINUTES="12"; fi
+          if [ -z "${PER_SITE_ITEMS}" ]; then PER_SITE_ITEMS="10"; fi
           if [ -z "${SITES}" ]; then SITES="all"; fi
 
-          CMD="python scripts/schedule_sd_drafts_publish.py --sites ${SITES} --max-items ${MAX_ITEMS} --interval-minutes ${INTERVAL_MINUTES} --output-dir data/schedule_publish_sd"
+          CMD="python scripts/schedule_sd_drafts_publish.py --sites ${SITES} --max-items ${MAX_ITEMS} --max-per-site ${PER_SITE_ITEMS} --interval-minutes ${INTERVAL_MINUTES} --output-dir data/schedule_publish_sd"
           if [ -n "${START_JST}" ]; then CMD="${CMD} --start-jst ${START_JST}"; fi
           if [ "${DRY_RUN}" = "true" ]; then CMD="${CMD} --dry-run"; fi
           if [ "${RESET_PROGRESS}" = "true" ]; then CMD="${CMD} --reset-progress"; fi
