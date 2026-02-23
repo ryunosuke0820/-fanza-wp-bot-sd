@@ -144,7 +144,6 @@ def _save_manifest(
     dry_run: bool,
     run_entries: list[dict[str, Any]],
     max_items: int,
-    max_per_site: int,
 ) -> None:
     merged_entries = _load_manifest_entries(output_dir)
     merged_entries.extend(run_entries)
@@ -154,7 +153,6 @@ def _save_manifest(
         "status_filter": status_filter,
         "dry_run": dry_run,
         "max_items": max_items,
-        "max_per_site": max_per_site,
         "entries": merged_entries,
     }
     _manifest_path(output_dir).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -218,7 +216,6 @@ def _build_site_queue(
     status_filter: str,
     max_pages: int,
     processed_ids: set[int],
-    max_per_site: int,
 ) -> deque[QueueItem]:
     posts: list[dict[str, Any]] = []
     for post in wp_client.iter_posts(
@@ -245,8 +242,6 @@ def _build_site_queue(
                 status_before=str(post.get("status", "") or ""),
             )
         )
-        if max_per_site > 0 and len(q) >= max_per_site:
-            break
     return q
 
 
@@ -254,7 +249,6 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Publish SD draft posts now (draft -> publish).")
     parser.add_argument("--sites", type=str, default="all")
     parser.add_argument("--max-items", type=int, default=0, help="0 means all available")
-    parser.add_argument("--max-per-site", type=int, default=0, help="0 means no per-site cap")
     parser.add_argument("--max-pages", type=int, default=50)
     parser.add_argument("--status-filter", type=str, default="draft")
     parser.add_argument("--dry-run", action="store_true")
@@ -264,8 +258,6 @@ def main() -> None:
 
     if args.max_pages <= 0:
         raise ValueError("--max-pages must be > 0")
-    if args.max_per_site < 0:
-        raise ValueError("--max-per-site must be >= 0")
     if args.status_filter.strip().lower() != "draft":
         raise ValueError("This publisher only supports --status-filter draft")
 
@@ -298,7 +290,6 @@ def main() -> None:
                 status_filter=status_filter,
                 max_pages=max(1, args.max_pages),
                 processed_ids=processed_ids,
-                max_per_site=int(args.max_per_site or 0),
             )
             logger.info("[%s] queued drafts: %s", site_id, len(site_queues[site_id]))
         except Exception as exc:  # noqa: BLE001
@@ -369,12 +360,7 @@ def main() -> None:
                 row["reason"] = str(exc)
 
         run_entries.append(row)
-        should_mark_processed = (
-            row["action"] == "updated"
-            or (row["action"] == "skipped" and row["reason"].startswith("status_"))
-        )
-        if should_mark_processed:
-            progress["processed_post_ids"].append(item.post_id)
+        progress["processed_post_ids"].append(item.post_id)
         if row["action"] == "updated":
             progress["last_published_at"] = _now_utc_iso()
             progress["total_published"] = int(progress.get("total_published", 0) or 0) + 1
@@ -398,7 +384,6 @@ def main() -> None:
         dry_run=bool(args.dry_run),
         run_entries=run_entries,
         max_items=max_items,
-        max_per_site=int(args.max_per_site or 0),
     )
 
     updated = sum(1 for r in run_entries if r["action"] == "updated")
